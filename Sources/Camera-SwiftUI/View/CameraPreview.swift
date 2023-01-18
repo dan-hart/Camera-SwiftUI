@@ -11,7 +11,14 @@ import AVFoundation
 import SwiftUI
 
 public struct CameraPreview: UIViewRepresentable {
-    var orientation: AVCaptureVideoOrientation
+    public var orientation: AVCaptureVideoOrientation
+    public var session: AVCaptureSession
+    
+    public init(session: AVCaptureSession, orientation: AVCaptureVideoOrientation) {
+        self.session = session
+        self.orientation = orientation
+    }
+    
     
     public class VideoPreviewView: UIView {
         public override class var layerClass: AnyClass {
@@ -62,8 +69,6 @@ public struct CameraPreview: UIViewRepresentable {
         }
     }
     
-    public let session: AVCaptureSession
-    
     public func makeUIView(context: Context) -> VideoPreviewView {
         let viewFinder = VideoPreviewView()
         viewFinder.backgroundColor = .black
@@ -80,7 +85,7 @@ public struct CameraPreview: UIViewRepresentable {
 
 struct CameraPreview_Previews: PreviewProvider {
     static var previews: some View {
-        CameraPreview(orientation: .portrait, session: AVCaptureSession())
+        CameraPreview(session: AVCaptureSession(), orientation: .portrait)
             .frame(height: 300)
     }
 }
