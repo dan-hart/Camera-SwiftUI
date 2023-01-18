@@ -278,6 +278,67 @@ public class CameraService: NSObject, Identifiable {
     }
     
     //  MARK: Device Configuration
+    public func setCameraPosition(to: AVCaptureDevice.Position) {
+        //        MARK: Here disable all camera operation related buttons due to configuration is due upon and must not be interrupted
+        DispatchQueue.main.async {
+            self.isCameraButtonDisabled = true
+        }
+        //
+        
+        sessionQueue.async {
+            let preferredPosition = to
+            let preferredDeviceType = AVCaptureDevice.DeviceType.builtInWideAngleCamera
+            
+            let devices = self.videoDeviceDiscoverySession.devices
+            var newVideoDevice: AVCaptureDevice? = nil
+            
+            // First, seek a device with both the preferred position and device type. Otherwise, seek a device with only the preferred position.
+            if let device = devices.first(where: { $0.position == preferredPosition && $0.deviceType == preferredDeviceType }) {
+                newVideoDevice = device
+            } else if let device = devices.first(where: { $0.position == preferredPosition }) {
+                newVideoDevice = device
+            }
+            
+            if let videoDevice = newVideoDevice {
+                do {
+                    let videoDeviceInput = try AVCaptureDeviceInput(device: videoDevice)
+                    
+                    self.session.beginConfiguration()
+                    
+                    // Remove the existing device input first, because AVCaptureSession doesn't support
+                    // simultaneous use of the rear and front cameras.
+                    self.session.removeInput(self.videoDeviceInput)
+                    
+                    if self.session.canAddInput(videoDeviceInput) {
+                        NotificationCenter.default.removeObserver(self, name: .AVCaptureDeviceSubjectAreaDidChange, object: to)
+                        NotificationCenter.default.addObserver(self, selector: #selector(self.subjectAreaDidChange), name: .AVCaptureDeviceSubjectAreaDidChange, object: videoDeviceInput.device)
+                        
+                        self.session.addInput(videoDeviceInput)
+                        self.videoDeviceInput = videoDeviceInput
+                    } else {
+                        self.session.addInput(self.videoDeviceInput)
+                    }
+                    
+                    if let connection = self.photoOutput.connection(with: .video) {
+                        if connection.isVideoStabilizationSupported {
+                            connection.preferredVideoStabilizationMode = .auto
+                        }
+                    }
+                    
+                    self.photoOutput.maxPhotoQualityPrioritization = .quality
+                    
+                    self.session.commitConfiguration()
+                } catch {
+                    print("Error occurred while creating video device input: \(error)")
+                }
+            }
+            
+            DispatchQueue.main.async {
+                //                MARK: Here enable all camera operation related buttons due to succesfull setup
+                self.isCameraButtonDisabled = false
+            }
+        }
+    }
     
     /// - Tag: ChangeCamera
     public func changeCamera() {
