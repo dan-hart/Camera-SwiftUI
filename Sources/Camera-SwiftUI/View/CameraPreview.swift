@@ -64,10 +64,6 @@ public struct CameraPreview: UIViewRepresentable {
     
     public let session: AVCaptureSession
     
-    public init(session: AVCaptureSession) {
-        self.session = session
-    }
-    
     public func makeUIView(context: Context) -> VideoPreviewView {
         let viewFinder = VideoPreviewView()
         viewFinder.backgroundColor = .black
@@ -84,7 +80,7 @@ public struct CameraPreview: UIViewRepresentable {
 
 struct CameraPreview_Previews: PreviewProvider {
     static var previews: some View {
-        CameraPreview(session: AVCaptureSession())
+        CameraPreview(orientation: .portrait, session: AVCaptureSession())
             .frame(height: 300)
     }
 }
